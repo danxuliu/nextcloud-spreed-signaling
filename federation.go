@@ -93,7 +93,7 @@ func NewFederationClient(ctx context.Context, hub *Hub, session *ClientSession, 
 	case "https":
 		u.Scheme = "wss"
 	}
-	conn, response, err := dialer.DialContext(ctx, u.String(), nil)
+	conn, response, err := dialer.DialContext(ctx, u.String()+"spreed", nil)
 	if err != nil {
 		return nil, err
 	}
