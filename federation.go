@@ -43,14 +43,6 @@ var (
 	ErrFederationNotSupported = NewError("federation_unsupported", "The target server does not support federation.")
 )
 
-type federationClientState int
-
-const (
-	federationWaitWelcome federationClientState = iota
-	federationWaitHelloResponse
-	federationWaitRoomResponse
-)
-
 type FederationClient struct {
 	session *ClientSession
 	message atomic.Pointer[ClientMessage]
