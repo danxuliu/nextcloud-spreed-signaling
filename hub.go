@@ -1584,8 +1584,22 @@ func (h *Hub) processRoom(sess Session, message *ClientMessage) {
 					"message": ne.Error(),
 				}
 			}
+			if details == nil {
+				var we websocket.HandshakeError
+				if errors.Is(err, websocket.ErrBadHandshake) {
+					details = map[string]string{
+						"code":    "network_error",
+						"message": err.Error(),
+					}
+				} else if errors.As(err, &we) {
+					details = map[string]string{
+						"code":    "network_error",
+						"message": we.Error(),
+					}
+				}
+			}
 
-			log.Printf("Error creating federation client for %s to join room %s: %s", session.PublicId(), roomId, err)
+			log.Printf("Error creating federation client to %s for %s to join room %s: %s", federation.SignalingUrl, session.PublicId(), roomId, err)
 			session.SendMessage(message.NewErrorServerMessage(
 				NewErrorDetail("federation_failed", "Failed to create federation client.", details),
 			))
