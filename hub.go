@@ -1031,7 +1031,9 @@ func (h *Hub) processMessage(client HandlerClient, data []byte) {
 	if cs, ok := session.(*ClientSession); ok && !isLocalMessage {
 		if federated := cs.GetFederationClient(); federated != nil {
 			log.Printf("Proxy client message %+v", message)
-			federated.ProxyMessage(&message)
+			if err := federated.ProxyMessage(&message); err != nil {
+				client.SendMessage(message.NewWrappedErrorServerMessage(err))
+			}
 			return
 		}
 	}
