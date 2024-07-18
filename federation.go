@@ -488,6 +488,10 @@ func (c *FederationClient) processMessage(msg *ServerMessage) {
 						}
 					}
 				}
+			case "message":
+				if c.changeRoomId && msg.Event.Message.RoomId == c.remoteRoomId {
+					msg.Event.Message.RoomId = c.roomId
+				}
 			}
 		case "roomlist":
 			switch msg.Event.Type {
