@@ -27,6 +27,7 @@ import (
 	"crypto/ed25519"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -1529,21 +1530,40 @@ func (h *Hub) processRoom(sess Session, message *ClientMessage) {
 	}
 
 	if federation := message.Room.Federation; federation != nil {
+		h.mu.Lock()
+		// The session will join a room, make sure it doesn't expire while connecting.
+		delete(h.anonymousSessions, session)
+		h.mu.Unlock()
+
 		// TODO: Handle case where session already is in a federated room on the same server.
 		client, err := NewFederationClient(session.Context(), h, session, message)
 		if err != nil {
+			if session.UserId() == "" {
+				h.startWaitAnonymousSessionRoom(session)
+			}
+			var ae *Error
+			if errors.As(err, &ae) {
+				session.SendMessage(message.NewErrorServerMessage(ae))
+				return
+			}
+
+			var details interface{}
+			var ce *tls.CertificateVerificationError
+			if errors.As(err, &ce) {
+				details = map[string]string{
+					"code":    "certificate_verification_error",
+					"message": ce.Error(),
+				}
+			}
+
 			log.Printf("Error creating federation client for %s to join room %s: %s", session.PublicId(), roomId, err)
 			session.SendMessage(message.NewErrorServerMessage(
-				NewErrorDetail("federation_failed", "Failed to create federation client.", nil),
+				NewErrorDetail("federation_failed", "Failed to create federation client.", details),
 			))
 			return
 		}
 
 		session.SetFederationClient(client)
-		h.mu.Lock()
-		// The session now joined a room, don't expire if it is anonymous.
-		delete(h.anonymousSessions, session)
-		h.mu.Unlock()
 		return
 	}
 
