@@ -1601,7 +1601,7 @@ func (h *Hub) processRoom(sess Session, message *ClientMessage) {
 
 			log.Printf("Error creating federation client to %s for %s to join room %s: %s", federation.SignalingUrl, session.PublicId(), roomId, err)
 			session.SendMessage(message.NewErrorServerMessage(
-				NewErrorDetail("federation_failed", "Failed to create federation client.", details),
+				NewErrorDetail("federation_error", "Failed to create federation client.", details),
 			))
 			return
 		}
