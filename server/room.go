@@ -1018,19 +1018,6 @@ func (r *Room) PublishUsersInCallChangedAll(inCall int) {
 }
 
 func (r *Room) PublishUsersChanged(changed api.UserDataList) {
-	for _, user := range changed {
-		sessionId, found := user.SessionId()
-		if !found {
-			// TODO: Do we still need this fallback?
-			sessionId, found = api.GetStringMapString[api.PublicSessionId](user, "sessionid")
-			if !found {
-				continue
-			}
-		}
-
-		r.addUser(sessionId, user)
-	}
-
 	changed = r.filterPermissions(changed)
 	// TODO: Do we still need the whole list of users to send to all participants?
 	users := r.filterPermissions(r.getUsers())
