@@ -1011,6 +1011,8 @@ func (r *Room) PublishUsersInCallChangedAll(inCall int) {
 			}
 
 			notify = append(notify, clientSession)
+
+			delete(r.users, clientSession.PublicId())
 		}
 
 		// Perform actual leaving asynchronously.
