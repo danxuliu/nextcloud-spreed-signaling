@@ -876,6 +876,38 @@ func (r *Room) addUser(sessionId api.PublicSessionId, user api.UserData) {
 	r.users[sessionId] = user
 }
 
+func (r *Room) removeUser(sessionId api.PublicSessionId) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	delete(r.users, sessionId)
+}
+
+func (r *Room) removeUsersNoLongerInCall(changed api.UserDataList) {
+	for _, user := range changed {
+		sessionId, found := user.SessionId()
+		if !found {
+			// TODO: Do we still need this fallback?
+			sessionId, found = api.GetStringMapString[api.PublicSessionId](user, "sessionid")
+			if !found {
+				continue
+			}
+		}
+
+		inCallInterface, found := user["inCall"]
+		if !found {
+			continue
+		}
+		inCall, ok := IsInCall(inCallInterface)
+		if !ok {
+			continue
+		}
+		if !inCall {
+			r.removeUser(sessionId)
+		}
+	}
+}
+
 func (r *Room) PublishUsersInCallChanged(changed api.UserDataList) {
 	for _, user := range changed {
 		sessionId, found := user.SessionId()
@@ -933,6 +965,8 @@ func (r *Room) PublishUsersInCallChanged(changed api.UserDataList) {
 	if err := r.publish(message); err != nil {
 		r.logger.Printf("Could not publish incall message in room %s: %s", r.Id(), err)
 	}
+
+	r.removeUsersNoLongerInCall(changed)
 }
 
 func (r *Room) PublishUsersInCallChangedAll(inCall int) {
